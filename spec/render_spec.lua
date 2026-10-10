@@ -88,6 +88,29 @@ local function render_text(spec)
 end
 
 describe('diffs.render', function()
+  describe('diff API results', function()
+    local original_diff
+
+    before_each(function()
+      original_diff = vim.text.diff
+    end)
+
+    after_each(function()
+      vim.text.diff = original_diff
+    end)
+
+    it('ignores non-unified results', function()
+      local called = false
+      vim.text.diff = function(_, _, opts)
+        called = true
+        assert.are.equal('unified', opts.result_type)
+        return { { 1, 1, 1, 1 } }
+      end
+      assert.same({}, render.unified_lines({ 'hello' }, { 'hallo' }, 'file', 'file'))
+      assert.is_true(called)
+    end)
+  end)
+
   after_each(function()
     restore_mocks()
     vim.o.diffopt = original_diffopt

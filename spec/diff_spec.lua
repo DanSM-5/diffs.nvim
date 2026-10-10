@@ -155,6 +155,36 @@ describe('diff', function()
     end)
   end)
 
+  describe('diff API results', function()
+    local original_diff
+
+    before_each(function()
+      original_diff = vim.text.diff
+    end)
+
+    after_each(function()
+      vim.text.diff = original_diff
+    end)
+
+    it('ignores non-index results', function()
+      local called = false
+      vim.text.diff = function(_, _, opts)
+        called = true
+        assert.are.equal('indices', opts.result_type)
+        return 'unexpected unified output'
+      end
+      assert.is_nil(diff.compute_intra_hunks({ '-hello', '+hallo' }))
+      assert.is_true(called)
+    end)
+
+    it('ignores diff errors', function()
+      vim.text.diff = function()
+        error('Cannot compute the diff')
+      end
+      assert.is_nil(diff.compute_intra_hunks({ '-hello', '+hallo' }))
+    end)
+  end)
+
   describe('compute_intra_hunks inline granularity', function()
     local saved
 

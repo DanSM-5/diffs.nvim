@@ -90,13 +90,23 @@ end
 describe('diffs.render', function()
   describe('diff API results', function()
     local original_diff
+    local original_text
 
     before_each(function()
+      original_text = vim.text
       original_diff = vim.text.diff
     end)
 
     after_each(function()
+      vim.text = original_text
       vim.text.diff = original_diff
+    end)
+
+    it('uses the legacy diff when vim.text has no diff method', function()
+      local expected = render.unified_lines({ 'hello' }, { 'hallo' }, 'file', 'file')
+      assert.is_true(#expected > 0)
+      vim.text = {}
+      assert.same(expected, render.unified_lines({ 'hello' }, { 'hallo' }, 'file', 'file'))
     end)
 
     it('ignores non-unified results', function()

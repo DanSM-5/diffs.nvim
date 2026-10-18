@@ -1,0 +1,43 @@
+name: Sync upstream
+
+on:
+  schedule:
+    # Every Monday at 04:17 UTC.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync ${{ matrix.branch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      # Both branches publish tags, so avoid concurrent pushes of the same tag.
+      max-parallel: 1
+      matrix:
+        branch: [main]
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+
+      - name: Fetch and merge upstream, including tags
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream https://forge.barrettruth.com/barrettruth/diffs.nvim.git
+          git fetch --tags upstream "+refs/heads/${BRANCH}:refs/remotes/upstream/${BRANCH}"
+          git merge --no-edit "refs/remotes/upstream/${BRANCH}"
+          git push --tags origin "HEAD:refs/heads/${BRANCH}"
